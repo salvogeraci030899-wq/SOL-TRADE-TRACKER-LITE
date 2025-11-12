@@ -545,25 +545,8 @@
             background-color: #fff;
         }
 
-        /* TradingView Screen */
-        .tradingview-container {
-            max-width: 500px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 10px 0;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .tradingview-frame {
-            flex: 1;
-            border: none;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            background: #000;
-        }
+        /* TradingView Screen - RIMOSSA */
+        /* Non ci serve più una schermata separata per TradingView */
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -577,7 +560,7 @@
                 padding: 16px;
             }
             
-            .input-container, .tracking-container, .tradingview-container {
+            .input-container, .tracking-container {
                 padding: 5px 0;
             }
             
@@ -771,22 +754,6 @@
         </div>
     </div>
 
-    <!-- TradingView Screen -->
-    <div id="tradingview-screen" class="screen">
-        <div class="tradingview-container">
-            <h1>TRADINGVIEW CHART</h1>
-            
-            <iframe 
-                src="https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT.P" 
-                class="tradingview-frame"
-                id="tradingview-frame"
-                allowfullscreen
-            ></iframe>
-            
-            <button class="back-button" id="back-from-tradingview">BACK TO TRACKING</button>
-        </div>
-    </div>
-
     <!-- Landscape mode warning -->
     <div class="landscape-warning">
         SOL TRADE TRACKER
@@ -797,9 +764,7 @@
         const splashScreen = document.getElementById('splash-screen');
         const inputScreen = document.getElementById('input-screen');
         const trackingScreen = document.getElementById('tracking-screen');
-        const tradingviewScreen = document.getElementById('tradingview-screen');
         const startTrackingBtn = document.getElementById('start-tracking');
-        const backFromTradingviewBtn = document.getElementById('back-from-tradingview');
         
         // Swipeable buttons
         const swipeableTrack = document.getElementById('swipeable-track');
@@ -857,9 +822,6 @@
         const autoRefreshIndicator = document.getElementById('auto-refresh-indicator');
         const countdownElement = document.getElementById('countdown');
         
-        // TradingView elements
-        const tradingviewFrame = document.getElementById('tradingview-frame');
-        
         // Global variables
         let tradeData = {};
         let priceUpdateInterval;
@@ -889,16 +851,20 @@
             setupEventListeners();
             setupSwipeHandling();
             
-            // Check if we have a saved trade
-            const savedData = loadFromLocalStorage();
-            if (savedData && savedData.entryPrice) {
-                tradeData = savedData;
-                isLongTrade = savedData.tpPrice > savedData.entryPrice;
-                populateFormWithSavedData(savedData);
-                startTrackingWithData();
-            } else {
-                showScreen(splashScreen);
-            }
+            // Show splash screen for 2 seconds then show input screen
+            showScreen(splashScreen);
+            setTimeout(() => {
+                // Check if we have a saved trade
+                const savedData = loadFromLocalStorage();
+                if (savedData && savedData.entryPrice) {
+                    tradeData = savedData;
+                    isLongTrade = savedData.tpPrice > savedData.entryPrice;
+                    populateFormWithSavedData(savedData);
+                    startTrackingWithData();
+                } else {
+                    showScreen(inputScreen);
+                }
+            }, 2000);
             
             updateRiskIndicators();
             updateSwipeableButtons();
@@ -923,7 +889,6 @@
             startTrackingBtn.addEventListener('click', startTracking);
             exchangeButton.addEventListener('click', openTradingView);
             newTradeButton.addEventListener('click', goBack);
-            backFromTradingviewBtn.addEventListener('click', () => showScreen(trackingScreen));
             
             // Input change listeners for real-time validation
             tradeAmountInput.addEventListener('input', updateRiskIndicators);
@@ -931,9 +896,6 @@
             entryPriceInput.addEventListener('input', updateRiskIndicators);
             slPriceInput.addEventListener('input', updateRiskIndicators);
             tpPriceInput.addEventListener('input', updateRiskIndicators);
-            
-            // Splash screen click handler
-            splashScreen.addEventListener('click', () => showScreen(inputScreen));
         }
 
         // Setup swipe handling
@@ -1247,9 +1209,17 @@
             }
         }
 
-        // Open TradingView within the app
+        // Open TradingView in full screen - FUNZIONE SEMPLIFICATA
         function openTradingView() {
-            showScreen(tradingviewScreen);
+            // Ferma l'aggiornamento dei prezzi durante la visualizzazione di TradingView
+            clearInterval(priceUpdateInterval);
+            
+            // Apri TradingView in una nuova finestra a schermo intero
+            const tradingViewUrl = 'https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT.P';
+            window.open(tradingViewUrl, '_blank');
+            
+            // Non mostrare alcuna schermata di caricamento, apri direttamente
+            console.log('Opening TradingView in full screen');
         }
 
         // Validate trade data
