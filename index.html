@@ -545,30 +545,38 @@
             background-color: #fff;
         }
 
-        /* TradingView Screen */
+        /* TradingView Container - Integrato nel tracking screen */
         .tradingview-container {
-            max-width: 500px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 10px 0;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+            margin: 20px 0;
+            height: 300px;
+            border-radius: 12px;
             overflow: hidden;
+            background: #000;
+            display: none; /* Inizialmente nascosto */
         }
 
         .tradingview-frame {
-            flex: 1;
+            width: 100%;
+            height: 100%;
             border: none;
-            border-radius: 12px;
-            margin-bottom: 20px;
             background: #000;
+        }
+
+        /* TradingView Toggle */
+        .tradingview-toggle {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 10px 0;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
             .current-price {
                 font-size: 28px;
+            }
+            
+            .tradingview-container {
+                height: 250px;
             }
         }
 
@@ -577,12 +585,16 @@
                 padding: 16px;
             }
             
-            .input-container, .tracking-container, .tradingview-container {
+            .input-container, .tracking-container {
                 padding: 5px 0;
             }
             
             .chart-container {
                 height: 100px;
+            }
+            
+            .tradingview-container {
+                height: 200px;
             }
         }
 
@@ -719,6 +731,21 @@
                     <div class="chart-lines" id="chart-lines"></div>
                 </div>
                 
+                <!-- TradingView Toggle Button -->
+                <button class="tradingview-toggle" id="tradingview-toggle">
+                    📈 SHOW TRADINGVIEW CHART
+                </button>
+                
+                <!-- TradingView Container - Integrato direttamente -->
+                <div class="tradingview-container" id="tradingview-container">
+                    <iframe 
+                        src="https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT.P" 
+                        class="tradingview-frame"
+                        id="tradingview-frame"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+                
                 <div class="auto-refresh-indicator" id="auto-refresh-indicator">
                     Returning to input screen in <span id="countdown">5</span> seconds
                 </div>
@@ -771,22 +798,6 @@
         </div>
     </div>
 
-    <!-- TradingView Screen -->
-    <div id="tradingview-screen" class="screen">
-        <div class="tradingview-container">
-            <h1>TRADINGVIEW CHART</h1>
-            
-            <iframe 
-                src="https://www.tradingview.com/chart/?symbol=BINANCE%3ASOLUSDT.P" 
-                class="tradingview-frame"
-                id="tradingview-frame"
-                allowfullscreen
-            ></iframe>
-            
-            <button class="back-button" id="back-from-tradingview">BACK TO TRACKING</button>
-        </div>
-    </div>
-
     <!-- Landscape mode warning -->
     <div class="landscape-warning">
         SOL TRADE TRACKER
@@ -797,15 +808,18 @@
         const splashScreen = document.getElementById('splash-screen');
         const inputScreen = document.getElementById('input-screen');
         const trackingScreen = document.getElementById('tracking-screen');
-        const tradingviewScreen = document.getElementById('tradingview-screen');
         const startTrackingBtn = document.getElementById('start-tracking');
-        const backFromTradingviewBtn = document.getElementById('back-from-tradingview');
         
         // Swipeable buttons
         const swipeableTrack = document.getElementById('swipeable-track');
         const exchangeButton = document.getElementById('exchange-button');
         const newTradeButton = document.getElementById('new-trade-button');
         const swipeIndicators = document.querySelectorAll('.swipe-indicator');
+        
+        // TradingView elements
+        const tradingviewToggle = document.getElementById('tradingview-toggle');
+        const tradingviewContainer = document.getElementById('tradingview-container');
+        const tradingviewFrame = document.getElementById('tradingview-frame');
         
         // Tracking elements
         const currentSolPrice = document.getElementById('current-sol-price');
@@ -857,9 +871,6 @@
         const autoRefreshIndicator = document.getElementById('auto-refresh-indicator');
         const countdownElement = document.getElementById('countdown');
         
-        // TradingView elements
-        const tradingviewFrame = document.getElementById('tradingview-frame');
-        
         // Global variables
         let tradeData = {};
         let priceUpdateInterval;
@@ -874,6 +885,7 @@
         let countdownValue = 5;
         let apiRetryCount = 0;
         const MAX_API_RETRIES = 3;
+        let isTradingViewVisible = false;
         
         // Swipeable buttons variables - SOLO 2 BOTTONI
         let swipeStartX = 0;
@@ -921,9 +933,9 @@
         function setupEventListeners() {
             // Button event listeners
             startTrackingBtn.addEventListener('click', startTracking);
-            exchangeButton.addEventListener('click', openTradingView);
+            exchangeButton.addEventListener('click', openExchange);
             newTradeButton.addEventListener('click', goBack);
-            backFromTradingviewBtn.addEventListener('click', () => showScreen(trackingScreen));
+            tradingviewToggle.addEventListener('click', toggleTradingView);
             
             // Input change listeners for real-time validation
             tradeAmountInput.addEventListener('input', updateRiskIndicators);
@@ -967,6 +979,24 @@
                 
                 isSwiping = false;
             });
+        }
+
+        // Toggle TradingView visibility
+        function toggleTradingView() {
+            isTradingViewVisible = !isTradingViewVisible;
+            
+            if (isTradingViewVisible) {
+                tradingviewContainer.style.display = 'block';
+                tradingviewToggle.textContent = '📈 HIDE TRADINGVIEW CHART';
+                
+                // Refresh the iframe to ensure it loads properly
+                setTimeout(() => {
+                    tradingviewFrame.src = tradingviewFrame.src;
+                }, 100);
+            } else {
+                tradingviewContainer.style.display = 'none';
+                tradingviewToggle.textContent = '📈 SHOW TRADINGVIEW CHART';
+            }
         }
 
         // Update swipeable buttons - SOLO 2 BOTTONI
@@ -1247,9 +1277,10 @@
             }
         }
 
-        // Open TradingView within the app
-        function openTradingView() {
-            showScreen(tradingviewScreen);
+        // Open exchange (TradingView web)
+        function openExchange() {
+            // Mostra/nascondi TradingView
+            toggleTradingView();
         }
 
         // Validate trade data
@@ -1630,6 +1661,11 @@
             // Reset alerts
             tpAlert.style.display = 'none';
             slAlert.style.display = 'none';
+            
+            // Hide TradingView if visible
+            if (isTradingViewVisible) {
+                toggleTradingView();
+            }
         }
 
         // Initialize the app when DOM is loaded
